@@ -14,23 +14,21 @@ import {
 	IconButton,
 	useColorMode,
 	Link,
+	useToast,
 } from "@chakra-ui/react";
 import { MoonIcon, SunIcon } from "@chakra-ui/icons";
-import * as yup from "yup";
 import NextLink from "next/link";
-
-type FormData = {
-	email: string;
-	password: string;
-};
-
-const schema = yup.object<FormData>({
-	email: yup.string().required("The email is required."),
-	password: yup.string().required("The password is required"),
-});
+import axios, { AxiosError } from "axios";
+import { useRouter } from "next/router";
+import schema from "../lib/schemas/signin";
+import { getUserSession } from "../lib/session";
+import { SigningData } from "../lib/types/signin";
+import { APIError } from "../lib/types/api";
 
 export default function SignIn() {
 	const { colorMode, toggleColorMode } = useColorMode();
+	const toastManager = useToast();
+	const router = useRouter();
 
 	return (
 		<Box>
@@ -65,12 +63,39 @@ export default function SignIn() {
 									email: "",
 									password: "",
 								}}
-								onSubmit={(values) => {
-									console.log(values);
-								}}
 								validationSchema={schema}
-								validateOnBlur={false}
-								validateOnChange={false}
+								onSubmit={async (values, formik) => {
+									try {
+										await axios.post("/api/signin", values);
+										router.push("/");
+									} catch (e) {
+										const error = e as AxiosError<APIError<keyof SigningData>>;
+										if (error.response) {
+											formik.setSubmitting(false);
+											const { formErrors, error: err } = error.response.data;
+											if (formErrors !== undefined) {
+												formik.setErrors(formErrors);
+											} else {
+												toastManager({
+													title: "Error.",
+													description: err,
+													status: "error",
+													duration: 9000,
+													isClosable: true,
+												});
+											}
+										} else {
+											toastManager({
+												title: "Unkown error.",
+												description:
+													"Something bad happend, please try again later.",
+												status: "error",
+												duration: 9000,
+												isClosable: true,
+											});
+										}
+									}
+								}}
 							>
 								{({ isSubmitting }) => (
 									<Form noValidate>
@@ -130,4 +155,22 @@ export default function SignIn() {
 			</Container>
 		</Box>
 	);
+}
+
+export async function getServerSideProps({ req, res }) {
+	const user = await getUserSession(req, res);
+
+	if (user !== undefined) {
+		return {
+			props: {},
+			redirect: {
+				destination: "/",
+				permanent: false,
+			},
+		};
+	}
+
+	return {
+		props: {},
+	};
 }

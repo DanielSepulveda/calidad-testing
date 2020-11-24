@@ -15,32 +15,24 @@ import {
 	IconButton,
 	useColorMode,
 	Link,
+	useToast,
 } from "@chakra-ui/react";
 import { MoonIcon, SunIcon } from "@chakra-ui/icons";
-import * as yup from "yup";
 import NextLink from "next/link";
-
-type FormData = {
-	name: string;
-	lastname: string;
-	email: string;
-	password: string;
-	confirmPassword: string;
-};
-
-const schema = yup.object<FormData>({
-	name: yup.string().required("The name is required."),
-	lastname: yup.string().required("The lastname is required."),
-	email: yup.string().required("The email is required."),
-	password: yup.string().required("The password is required."),
-	confirmPassword: yup
-		.string()
-		.oneOf([yup.ref("password"), null], "Passwords don't match.")
-		.required("Please confirm your password."),
-});
+import zxcvbn from "zxcvbn";
+import classnames from "classnames";
+import axios, { AxiosError } from "axios";
+import { useRouter } from "next/router";
+import schema from "../lib/schemas/signup";
+import { SignupData } from "../lib/types/signup";
+import { APIError } from "../lib/types/api";
+import styles from "./signup.module.scss";
+import { getUserSession } from "../lib/session";
 
 export default function Signup() {
 	const { colorMode, toggleColorMode } = useColorMode();
+	const toastManager = useToast();
+	const router = useRouter();
 
 	return (
 		<Box>
@@ -78,8 +70,37 @@ export default function Signup() {
 									password: "",
 									confirmPassword: "",
 								}}
-								onSubmit={(values) => {
-									console.log(values);
+								onSubmit={async (values, formik) => {
+									try {
+										await axios.post("/api/signup", values);
+										router.push("/");
+									} catch (e) {
+										const error = e as AxiosError<APIError<keyof SignupData>>;
+										if (error.response) {
+											formik.setSubmitting(false);
+											const { formErrors, error: err } = error.response.data;
+											if (formErrors !== undefined) {
+												formik.setErrors(formErrors);
+											} else {
+												toastManager({
+													title: "Error.",
+													description: err,
+													status: "error",
+													duration: 9000,
+													isClosable: true,
+												});
+											}
+										} else {
+											toastManager({
+												title: "Unkown error.",
+												description:
+													"Something bad happend, please try again later.",
+												status: "error",
+												duration: 9000,
+												isClosable: true,
+											});
+										}
+									}
 								}}
 								validationSchema={schema}
 							>
@@ -92,7 +113,7 @@ export default function Signup() {
 												rowGap={4}
 												columnGap={4}
 											>
-												<GridItem rowSpan={1} colSpan={1}>
+												<GridItem rowSpan={1} colSpan={[2, 1]}>
 													<Field name="name">
 														{({ field, form, meta }) => (
 															<FormControl
@@ -109,7 +130,7 @@ export default function Signup() {
 														)}
 													</Field>
 												</GridItem>
-												<GridItem rowSpan={1} colSpan={1}>
+												<GridItem rowSpan={1} colSpan={[2, 1]}>
 													<Field name="lastname">
 														{({ field, form, meta }) => (
 															<FormControl
@@ -145,23 +166,49 @@ export default function Signup() {
 												</GridItem>
 												<GridItem rowSpan={1} colSpan={2}>
 													<Field name="password">
-														{({ field, form, meta }) => (
-															<FormControl
-																isInvalid={Boolean(meta.error && meta.touched)}
-																id="password"
-																isRequired
-															>
-																<FormLabel>Password</FormLabel>
-																<Input
-																	{...field}
-																	placeholder="Password"
-																	type="password"
-																/>
-																<FormErrorMessage>
-																	{meta.error}
-																</FormErrorMessage>
-															</FormControl>
-														)}
+														{({ field, form, meta }) => {
+															const strength =
+																field.value &&
+																field.value.length &&
+																zxcvbn(field.value).score;
+															return (
+																<FormControl
+																	isInvalid={Boolean(
+																		meta.error && meta.touched
+																	)}
+																	id="password"
+																	isRequired
+																>
+																	<Box mb={1}>
+																		<FormLabel>Password</FormLabel>
+																		{field.value && field.value.length && (
+																			<Box
+																				className={classnames(
+																					styles.strengthMeter,
+																					{
+																						[styles.strengthMeterDark]:
+																							colorMode === "dark",
+																					}
+																				)}
+																			>
+																				<Box
+																					className={styles.strengthMeterFill}
+																					data-strength={strength}
+																				/>
+																			</Box>
+																		)}
+																	</Box>
+																	<Input
+																		{...field}
+																		placeholder="Password"
+																		type="password"
+																	/>
+																	<FormErrorMessage>
+																		{meta.error}
+																	</FormErrorMessage>
+																</FormControl>
+															);
+														}}
 													</Field>
 												</GridItem>
 												<GridItem rowSpan={1} colSpan={2}>
@@ -209,4 +256,22 @@ export default function Signup() {
 			</Container>
 		</Box>
 	);
+}
+
+export async function getServerSideProps({ req, res }) {
+	const user = await getUserSession(req, res);
+
+	if (user !== undefined) {
+		return {
+			props: {},
+			redirect: {
+				destination: "/",
+				permanent: false,
+			},
+		};
+	}
+
+	return {
+		props: {},
+	};
 }
