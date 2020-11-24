@@ -1,6 +1,7 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import { Query } from "mongoose";
 import { ReactQueryCacheProvider } from "react-query";
+import "reflect-metadata";
 import queryCache from "../lib/cache";
 
 function MyApp({ Component, pageProps }) {

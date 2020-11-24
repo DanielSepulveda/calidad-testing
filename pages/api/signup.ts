@@ -28,7 +28,7 @@ const handler = withSession(async (req, res) => {
 	}
 
 	if ((await User.countDocuments({ email: values.email })) > 0) {
-		res.status(403).json(
+		return res.status(403).json(
 			errorBuilder({
 				error: "A user already exists with the email provided.",
 			})

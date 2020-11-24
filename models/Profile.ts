@@ -4,8 +4,9 @@ import { User } from "./User";
 export type Profile<UserType = User> = {
 	_id: string;
 	name: string;
-	lastname: string;
+	lastname?: string;
 	user: UserType;
+	image?: string;
 };
 
 const ProfileSchema = new mongoose.Schema<Profile>({
@@ -15,7 +16,9 @@ const ProfileSchema = new mongoose.Schema<Profile>({
 	},
 	lastname: {
 		type: String,
-		required: [true, "Please provide a lastname"],
+	},
+	image: {
+		type: String,
 	},
 	user: {
 		type: "ObjectId",

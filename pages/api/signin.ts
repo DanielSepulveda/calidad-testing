@@ -35,7 +35,7 @@ const handler = withSession(async (req, res) => {
 
 	const user = await User.findOne({ email: values.email });
 
-	if (!user) {
+	if (!user || !user.password) {
 		return res.status(400).json(invalidLoginError);
 	}
 
