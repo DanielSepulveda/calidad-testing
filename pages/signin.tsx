@@ -79,8 +79,6 @@ export default function SignIn() {
 									password: "",
 								}}
 								validationSchema={schema}
-								validateOnBlur={false}
-								validateOnChange={false}
 								onSubmit={async (values, formik) => {
 									try {
 										await axios.post("/api/signin", values);
