@@ -1,3 +1,4 @@
+import * as React from "react";
 import Head from "next/head";
 import {
 	Box,
@@ -41,8 +42,10 @@ export default function Home() {
 	const { colorMode, toggleColorMode } = useColorMode();
 	const router = useRouter();
 	const [authSession] = useSession();
+	const [isLogginOut, setIsLogginOut] = React.useState(false);
 
 	const logout = async () => {
+		setIsLogginOut(true);
 		await axios.post("/api/logout");
 		if (authSession) {
 			await signOut();
@@ -65,7 +68,7 @@ export default function Home() {
 				<Box py="1rem">
 					<Container maxWidth="4xl" display="flex" justifyContent="flex-end">
 						<Box mr="1rem">
-							<Button variant="ghost" onClick={logout}>
+							<Button variant="ghost" onClick={logout} isLoading={isLogginOut}>
 								Logout
 							</Button>
 						</Box>
