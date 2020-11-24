@@ -1,3 +1,4 @@
+import * as React from "react";
 import Head from "next/head";
 import { Formik, Form, Field } from "formik";
 import {
@@ -16,8 +17,18 @@ import {
 	useColorMode,
 	Link,
 	useToast,
+	Text,
+	Divider,
+	InputGroup,
+	InputRightElement,
 } from "@chakra-ui/react";
-import { MoonIcon, SunIcon } from "@chakra-ui/icons";
+import {
+	MoonIcon,
+	SunIcon,
+	CheckIcon,
+	ViewIcon,
+	ViewOffIcon,
+} from "@chakra-ui/icons";
 import NextLink from "next/link";
 import zxcvbn from "zxcvbn";
 import classnames from "classnames";
@@ -30,6 +41,7 @@ import styles from "./signup.module.scss";
 import { getUserSession } from "../lib/session";
 
 export default function Signup() {
+	const [displayPassword, setDisplayPassword] = React.useState(false);
 	const { colorMode, toggleColorMode } = useColorMode();
 	const toastManager = useToast();
 	const router = useRouter();
@@ -54,7 +66,7 @@ export default function Signup() {
 			</header>
 
 			<Container>
-				<Box pt="2em">
+				<Box py="2rem">
 					<main>
 						<Center>
 							<Heading size="2xl" fontWeight="medium">
@@ -122,7 +134,14 @@ export default function Signup() {
 																isRequired
 															>
 																<FormLabel>Name</FormLabel>
-																<Input {...field} placeholder="Name" />
+																<InputGroup>
+																	<Input {...field} placeholder="Name" />
+																	{meta.touched && !Boolean(meta.error) && (
+																		<InputRightElement
+																			children={<CheckIcon color="green.500" />}
+																		/>
+																	)}
+																</InputGroup>
 																<FormErrorMessage>
 																	{meta.error}
 																</FormErrorMessage>
@@ -139,7 +158,14 @@ export default function Signup() {
 																isRequired
 															>
 																<FormLabel>Last name</FormLabel>
-																<Input {...field} placeholder="Last name" />
+																<InputGroup>
+																	<Input {...field} placeholder="Last name" />
+																	{meta.touched && !Boolean(meta.error) && (
+																		<InputRightElement
+																			children={<CheckIcon color="green.500" />}
+																		/>
+																	)}
+																</InputGroup>
 																<FormErrorMessage>
 																	{meta.error}
 																</FormErrorMessage>
@@ -156,7 +182,14 @@ export default function Signup() {
 																isRequired
 															>
 																<FormLabel>Email</FormLabel>
-																<Input {...field} placeholder="Email" />
+																<InputGroup>
+																	<Input {...field} placeholder="Email" />
+																	{meta.touched && !Boolean(meta.error) && (
+																		<InputRightElement
+																			children={<CheckIcon color="green.500" />}
+																		/>
+																	)}
+																</InputGroup>
 																<FormErrorMessage>
 																	{meta.error}
 																</FormErrorMessage>
@@ -181,28 +214,68 @@ export default function Signup() {
 																>
 																	<Box mb={1}>
 																		<FormLabel>Password</FormLabel>
+																	</Box>
+																	<Box display="flex">
+																		<Box flex="1">
+																			{field.value && field.value.length && (
+																				<Box
+																					className={classnames(
+																						styles.strengthMeter,
+																						{
+																							[styles.strengthMeterDark]:
+																								colorMode === "dark",
+																						}
+																					)}
+																				>
+																					<Box
+																						className={styles.strengthMeterFill}
+																						data-strength={strength}
+																					/>
+																				</Box>
+																			)}
+																			<InputGroup>
+																				<Input
+																					{...field}
+																					placeholder="Password"
+																					type={
+																						displayPassword
+																							? "text"
+																							: "password"
+																					}
+																				/>
+																				{meta.touched &&
+																					!Boolean(meta.error) && (
+																						<InputRightElement
+																							children={
+																								<CheckIcon color="green.500" />
+																							}
+																						/>
+																					)}
+																			</InputGroup>
+																		</Box>
 																		{field.value && field.value.length && (
 																			<Box
-																				className={classnames(
-																					styles.strengthMeter,
-																					{
-																						[styles.strengthMeterDark]:
-																							colorMode === "dark",
-																					}
-																				)}
+																				display="flex"
+																				alignItems="center"
+																				transform="translate(0px, 8px)"
+																				pl="8px"
 																			>
-																				<Box
-																					className={styles.strengthMeterFill}
-																					data-strength={strength}
+																				<IconButton
+																					aria-label="Toggle see password"
+																					icon={
+																						displayPassword ? (
+																							<ViewIcon />
+																						) : (
+																							<ViewOffIcon />
+																						)
+																					}
+																					onClick={() =>
+																						setDisplayPassword((prev) => !prev)
+																					}
 																				/>
 																			</Box>
 																		)}
 																	</Box>
-																	<Input
-																		{...field}
-																		placeholder="Password"
-																		type="password"
-																	/>
 																	<FormErrorMessage>
 																		{meta.error}
 																	</FormErrorMessage>
@@ -220,11 +293,18 @@ export default function Signup() {
 																isRequired
 															>
 																<FormLabel>Confirm password</FormLabel>
-																<Input
-																	{...field}
-																	placeholder="Confirm password"
-																	type="password"
-																/>
+																<InputGroup>
+																	<Input
+																		{...field}
+																		placeholder="Confirm password"
+																		type="password"
+																	/>
+																	{meta.touched && !Boolean(meta.error) && (
+																		<InputRightElement
+																			children={<CheckIcon color="green.500" />}
+																		/>
+																	)}
+																</InputGroup>
 																<FormErrorMessage>
 																	{meta.error}
 																</FormErrorMessage>
@@ -240,16 +320,30 @@ export default function Signup() {
 												colorScheme="blue"
 												isLoading={isSubmitting}
 												type="submit"
+												w="100%"
 											>
-												Submit
+												Sign up
 											</Button>
-											<NextLink href="/signin" passHref>
-												<Link color="blue.500">Already have an account?</Link>
-											</NextLink>
 										</Box>
 									</Form>
 								)}
 							</Formik>
+						</Box>
+						<Divider />
+						<Box
+							display="flex"
+							justifyContent="center"
+							mt="2rem"
+							p="1rem"
+							backgroundColor="blue.50"
+							borderRadius="5px"
+						>
+							<Text color="black">Already have an account?</Text>
+							<NextLink href="/signin" passHref>
+								<Link color="blue.500" ml="8px">
+									Sign in
+								</Link>
+							</NextLink>
 						</Box>
 					</main>
 				</Box>
@@ -261,7 +355,7 @@ export default function Signup() {
 export async function getServerSideProps({ req, res }) {
 	const user = await getUserSession(req, res);
 
-	if (user !== undefined) {
+	if (user) {
 		return {
 			props: {},
 			redirect: {

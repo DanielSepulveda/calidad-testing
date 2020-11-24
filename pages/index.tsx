@@ -5,17 +5,17 @@ import {
 	Center,
 	Heading,
 	Button,
-	Grid,
-	GridItem,
 	IconButton,
 	useColorMode,
 	Text,
 	Skeleton,
+	Avatar,
 } from "@chakra-ui/react";
 import { useQuery } from "react-query";
 import axios from "axios";
 import { MoonIcon, SunIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/router";
+import { useSession, signOut } from "next-auth/client";
 import { getUserSession } from "../lib/session";
 import { Profile as ProfileType } from "../lib/types/client/user";
 import queryCache from "../lib/cache";
@@ -40,11 +40,16 @@ const AsyncData: React.FC<AsyncDataProps> = ({ isLoading, children }) => {
 export default function Home() {
 	const { colorMode, toggleColorMode } = useColorMode();
 	const router = useRouter();
+	const [authSession] = useSession();
 
 	const logout = async () => {
 		await axios.post("/api/logout");
+		if (authSession) {
+			await signOut();
+		} else {
+			router.push("/signin");
+		}
 		queryCache.clear();
-		router.push("/signin");
 	};
 
 	const { data, isLoading } = useQuery("me", fetchUser);
@@ -74,7 +79,7 @@ export default function Home() {
 			</header>
 
 			<Container>
-				<Box pt="2em">
+				<Box py="2em">
 					<main>
 						<Center>
 							<Heading size="2xl" fontWeight="medium">
@@ -82,49 +87,56 @@ export default function Home() {
 							</Heading>
 						</Center>
 						<Box pt="2rem">
-							<Grid
-								templateRows="repeat(4, 1fr)"
-								templateColumns="repeat(2, 1fr)"
-								rowGap={4}
-								columnGap={4}
-							>
-								<GridItem rowSpan={1} colSpan={[2, 1]}>
+							<Box display="flex" flexDirection="column">
+								<Box>
+									<Box display="flex" justifyContent="center">
+										<Avatar
+											size="2xl"
+											name={`${data?.name} ${data?.lastname || ""}`}
+											src={data?.image}
+										/>
+									</Box>
+								</Box>
+								<Box
+									mt="1rem"
+									display="flex"
+									flexDirection="column"
+									alignItems="center"
+								>
 									<Box>
-										<Text fontWeight="semibold" fontSize="lg">
-											Name
-										</Text>
-										<Box>
-											<AsyncData isLoading={isLoading}>
-												<Text>{data?.name}</Text>
-											</AsyncData>
+										<Box py="1rem">
+											<Text fontWeight="semibold" fontSize="lg">
+												Name
+											</Text>
+											<Box>
+												<AsyncData isLoading={isLoading}>
+													<Text>{data?.name}</Text>
+												</AsyncData>
+											</Box>
+										</Box>
+										<Box py="1rem">
+											<Text fontWeight="semibold" fontSize="lg">
+												Last name
+											</Text>
+											<Box>
+												<AsyncData isLoading={isLoading}>
+													<Text>{data?.lastname || "-"}</Text>
+												</AsyncData>
+											</Box>
+										</Box>
+										<Box py="1rem">
+											<Text fontWeight="semibold" fontSize="lg">
+												Email
+											</Text>
+											<Box>
+												<AsyncData isLoading={isLoading}>
+													<Text>{data?.user?.email}</Text>
+												</AsyncData>
+											</Box>
 										</Box>
 									</Box>
-								</GridItem>
-								<GridItem rowSpan={1} colSpan={[2, 1]}>
-									<Box>
-										<Text fontWeight="semibold" fontSize="lg">
-											Last name
-										</Text>
-										<Box>
-											<AsyncData isLoading={isLoading}>
-												<Text>{data?.lastname}</Text>
-											</AsyncData>
-										</Box>
-									</Box>
-								</GridItem>
-								<GridItem rowSpan={1} colSpan={2}>
-									<Box>
-										<Text fontWeight="semibold" fontSize="lg">
-											Email
-										</Text>
-										<Box>
-											<AsyncData isLoading={isLoading}>
-												<Text>{data?.user?.email}</Text>
-											</AsyncData>
-										</Box>
-									</Box>
-								</GridItem>
-							</Grid>
+								</Box>
+							</Box>
 						</Box>
 					</main>
 				</Box>
@@ -136,7 +148,7 @@ export default function Home() {
 export async function getServerSideProps({ req, res }) {
 	const user = await getUserSession(req, res);
 
-	if (user === undefined) {
+	if (!user) {
 		return {
 			props: {},
 			redirect: {

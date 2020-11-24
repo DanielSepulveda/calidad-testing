@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 export type User = {
 	_id: string;
 	email: string;
-	password: string;
+	password?: string;
 };
 
 const UserSchema = new mongoose.Schema<User>({
@@ -14,7 +14,6 @@ const UserSchema = new mongoose.Schema<User>({
 	},
 	password: {
 		type: String,
-		required: [true, "Please provide a password"],
 	},
 });
 
